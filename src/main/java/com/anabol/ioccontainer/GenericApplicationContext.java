@@ -10,6 +10,8 @@ public class GenericApplicationContext implements ApplicationContext{
     private List<BeanDefinition> beanDefinitions;
     private List<Bean> beans;
 
+    private String filePath;
+
     @Override
     public Object getBean(String beanId) {
         return null;
@@ -40,6 +42,17 @@ public class GenericApplicationContext implements ApplicationContext{
 
     private void injectRefDependencies() {
 
+    }
+
+    public static void main(String[] args) {
+        ApplicationContext applicationContext = new GenericApplicationContext("context.xml");
+
+    }
+
+    public GenericApplicationContext(String filePath) {
+        this.filePath = filePath;
+        definitionReader = new XmlBeanDefinitionReader();
+        definitionReader.getBeanDefinitionList(filePath);
     }
 
 }
