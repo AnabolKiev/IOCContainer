@@ -1,0 +1,11 @@
+<beans>
+    <bean id="testImpl" class="com.anabol.ioccontainer.entities.TestImpl">
+        <property name="name" value="TEST_NAME"/>
+    </bean>
+    <bean id="testService" class="com.anabol.ioccontainer.entities.TestService">
+        <property name="test" ref="testImpl"/>
+    </bean>
+    <bean id="testService2" class="com.anabol.ioccontainer.entities.TestService">
+        <property name="test" ref="testImpl"/>
+    </bean>
+</beans>

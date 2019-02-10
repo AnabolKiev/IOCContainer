@@ -1,4 +1,4 @@
-package com.anabol.ioccontainer;
+package com.anabol.ioccontainer.reader;
 
 import com.anabol.ioccontainer.entity.BeanDefinition;
 

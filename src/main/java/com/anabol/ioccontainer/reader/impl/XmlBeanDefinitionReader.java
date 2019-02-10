@@ -1,6 +1,8 @@
-package com.anabol.ioccontainer;
+package com.anabol.ioccontainer.reader.impl;
 
+import com.anabol.ioccontainer.reader.impl.sax.ContextHandler;
 import com.anabol.ioccontainer.entity.BeanDefinition;
+import com.anabol.ioccontainer.reader.BeanDefinitionReader;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
