@@ -23,7 +23,7 @@ public class XmlBeanDefinitionReader implements BeanDefinitionReader {
         }
     }
 
-    private List<BeanDefinition> getBeanDefinitions(InputStream inputStream) throws ParserConfigurationException, SAXException, IOException {
+    List<BeanDefinition> getBeanDefinitions(InputStream inputStream) throws ParserConfigurationException, SAXException, IOException {
         SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
         SAXParser saxParser = saxParserFactory.newSAXParser();
         ContextHandler handler = new ContextHandler();
