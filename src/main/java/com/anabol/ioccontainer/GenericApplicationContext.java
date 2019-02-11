@@ -1,23 +1,36 @@
 package com.anabol.ioccontainer;
 
+import com.anabol.ioccontainer.entity.Bean;
 import com.anabol.ioccontainer.entity.BeanDefinition;
 import com.anabol.ioccontainer.reader.BeanDefinitionReader;
 import com.anabol.ioccontainer.reader.impl.XmlBeanDefinitionReader;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class GenericApplicationContext implements ApplicationContext {
-    private List<BeanDefinition> beanDefinitions;
-    private Map<String, Object> beans = new HashMap<>();
+    private List<Bean> beans = new ArrayList<>();
+
+    public GenericApplicationContext(String filePath) {
+        BeanDefinitionReader definitionReader = new XmlBeanDefinitionReader();
+        List<BeanDefinition> beanDefinitions = definitionReader.getBeanDefinitionList(filePath);
+        beans = createBeans(beanDefinitions);
+    }
 
     @Override
     public Object getBean(String beanId) {
-        return beans.get(beanId);
+        Object result = null;
+        for (Bean bean : beans) {
+            if (bean.getId().equals(beanId)) {
+                if (result == null) {
+                    result = bean;
+                } else {
+                    throw new RuntimeException("There are more then one bean for ID " + beanId);
+                }
+            }
+        }
+        return result;
     }
 
     @Override
@@ -46,18 +59,24 @@ public class GenericApplicationContext implements ApplicationContext {
     }
 
     @Override
-    public Set<String> getBeanNames() {
-        return beans.keySet();
+    public List<String> getBeanNames() {
+        List<String> beanNames = new ArrayList<>();
+        for (Bean bean : beans) {
+            beanNames.add(bean.getId());
+        }
+        return beanNames;
     }
 
-    private void createBeans() {
+    private List<Bean> createBeans(List<BeanDefinition> beanDefinitions) {
         for (BeanDefinition beanDefinition : beanDefinitions) {
             try {
+                Bean bean = new Bean();
                 Class<?> clazz = Class.forName(beanDefinition.getClassName());
-                Object bean = clazz.newInstance();
+                bean.setId(beanDefinition.getId());
+                bean.setValue(clazz.newInstance());
                 injectValueDependencies(beanDefinition, bean);
                 injectRefDependencies(beanDefinition, bean);
-                beans.put(beanDefinition.getId(), bean);
+                beans.add(bean);
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 e.printStackTrace();
             }
@@ -93,12 +112,6 @@ public class GenericApplicationContext implements ApplicationContext {
 
     private static String getSetterName(String fieldName) {
         return "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-    }
-
-    public GenericApplicationContext(String filePath) {
-        BeanDefinitionReader definitionReader = new XmlBeanDefinitionReader();
-        beanDefinitions = definitionReader.getBeanDefinitionList(filePath);
-        createBeans();
     }
 
 }

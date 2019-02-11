@@ -1,6 +1,6 @@
 package com.anabol.ioccontainer;
 
-import java.util.Set;
+import java.util.List;
 
 public interface ApplicationContext {
 
@@ -10,5 +10,5 @@ public interface ApplicationContext {
 
     <T> T getBean(String beanId, Class<T> clazz);
 
-    Set<String> getBeanNames();
+    List<String> getBeanNames();
 }
