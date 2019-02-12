@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface BeanDefinitionReader {
 
-    List<BeanDefinition> getBeanDefinitionList(String filePath);
+    List<BeanDefinition> getBeanDefinitionList();
 
 }

@@ -1,4 +1,4 @@
-package com.anabol.ioccontainer.reader.exception;
+package com.anabol.ioccontainer.exception;
 
 public class BeanDefinitionParserException extends RuntimeException {
 

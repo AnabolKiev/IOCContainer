@@ -1,21 +1,21 @@
-package com.anabol.ioccontainer.entities;
+package com.anabol.ioccontainer.entity;
 
 public class TestImpl implements ITest {
 
     private String name;
-    private int count;
 
     @Override
     public void doSomething() {
         System.out.println("I did something");
-        System.out.println("My name is " + name + " and count = " + count);
+        System.out.println("My name is " + name);
     }
 
     public void setName(String name) {
         this.name = name;
     }
 
-    public void setCount(int count) {
-        this.count = count;
+    public String getName() {
+        return name;
     }
+
 }

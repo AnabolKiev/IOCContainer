@@ -14,10 +14,10 @@ import java.util.List;
 
 public class XmlBeanDefinitionReaderTest {
     private static final String CONTEXT_XML = "<beans>\n" +
-            "    <bean id=\"testImpl\" class=\"com.anabol.ioccontainer.entities.TestImpl\">\n" +
+            "    <bean id=\"testImpl\" class=\"com.anabol.ioccontainer.entity.TestImpl\">\n" +
             "        <property name=\"name\" value=\"TEST_NAME\"/>\n" +
             "    </bean>\n" +
-            "    <bean id=\"testService\" class=\"com.anabol.ioccontainer.entities.TestService\">\n" +
+            "    <bean id=\"testService\" class=\"com.anabol.ioccontainer.entity.TestService\">\n" +
             "        <property name=\"test\" ref=\"testImpl\"/>\n" +
             "    </bean>\n" +
             "</beans>";
@@ -30,7 +30,7 @@ public class XmlBeanDefinitionReaderTest {
         assertEquals(2, beanDefinitions.size());
         BeanDefinition beanDefinition = beanDefinitions.get(0);
         assertEquals("testImpl", beanDefinition.getId());
-        assertEquals("com.anabol.ioccontainer.entities.TestImpl", beanDefinition.getClassName());
+        assertEquals("com.anabol.ioccontainer.entity.TestImpl", beanDefinition.getClassName());
         assertTrue(beanDefinition.getRefDependencies().isEmpty());
         assertEquals(1, beanDefinition.getValueDependencies().size());
         assertTrue(beanDefinition.getValueDependencies().containsKey("name"));
@@ -38,7 +38,7 @@ public class XmlBeanDefinitionReaderTest {
 
         beanDefinition = beanDefinitions.get(1);
         assertEquals("testService", beanDefinition.getId());
-        assertEquals("com.anabol.ioccontainer.entities.TestService", beanDefinition.getClassName());
+        assertEquals("com.anabol.ioccontainer.entity.TestService", beanDefinition.getClassName());
         assertTrue(beanDefinition.getValueDependencies().isEmpty());
         assertEquals(1, beanDefinition.getRefDependencies().size());
         assertTrue(beanDefinition.getRefDependencies().containsKey("test"));
