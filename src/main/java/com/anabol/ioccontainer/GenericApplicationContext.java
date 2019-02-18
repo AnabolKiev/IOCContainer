@@ -4,9 +4,12 @@ import com.anabol.ioccontainer.entity.Bean;
 import com.anabol.ioccontainer.entity.BeanDefinition;
 import com.anabol.ioccontainer.exception.BeanInitiationException;
 import com.anabol.ioccontainer.exception.NotUniqueBeanException;
+import com.anabol.ioccontainer.processor.BeanFactoryPostProcessor;
+import com.anabol.ioccontainer.processor.BeanPostProcessor;
 import com.anabol.ioccontainer.reader.BeanDefinitionReader;
 import com.anabol.ioccontainer.reader.impl.XmlBeanDefinitionReader;
 
+import javax.annotation.PostConstruct;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -14,13 +17,18 @@ import java.util.*;
 public class GenericApplicationContext implements ApplicationContext {
 
     private List<Bean> beans;
+    private List<Bean> systemBeans = new ArrayList<>();
 
     public GenericApplicationContext(String... filePaths) {
         BeanDefinitionReader definitionReader = new XmlBeanDefinitionReader(filePaths);
         List<BeanDefinition> beanDefinitions = definitionReader.getBeanDefinitionList();
+        postProcessBeanDefinitions(beanDefinitions);
         beans = createBeans(beanDefinitions);
         injectValueDependencies(beanDefinitions, beans);
         injectRefDependencies(beanDefinitions, beans);
+        postProcessBeforeInitialization(beans);
+        postConstructInitialization(beans);
+        postProcessAfterInitialization(beans);
     }
 
     @Override
@@ -71,6 +79,24 @@ public class GenericApplicationContext implements ApplicationContext {
             beanNames.add(bean.getId());
         }
         return beanNames;
+    }
+
+    void postProcessBeanDefinitions(List<BeanDefinition> beanDefinitions) {
+        for (BeanDefinition beanDefinition : beanDefinitions) {
+            try {
+                Class<?> clazz = Class.forName(beanDefinition.getClassName());
+                if (BeanFactoryPostProcessor.class.isAssignableFrom(clazz)) {
+                    Bean systemBean = new Bean();
+                    systemBean.setId(beanDefinition.getId());
+                    systemBean.setValue(clazz.newInstance());
+                    Method method = clazz.getMethod("postProcessBeanFactory");
+                    method.invoke(systemBean, beanDefinitions);
+                }
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
+                    InvocationTargetException e) {
+                throw new BeanInitiationException(e);
+            }
+        }
     }
 
     List<Bean> createBeans(List<BeanDefinition> beanDefinitions) {
@@ -129,6 +155,39 @@ public class GenericApplicationContext implements ApplicationContext {
                 }
             }
         }
+    }
+
+    void postProcessBeforeInitialization(List<Bean> beans) {
+        separateSystemBeans(beans);
+    }
+
+    private void separateSystemBeans(List<Bean> beans) {
+        for (Bean bean : beans) {
+            Class<?> clazz = bean.getClass();
+            if (BeanPostProcessor.class.isAssignableFrom(clazz)) {
+                systemBeans.add(bean);
+            }
+        }
+        beans.removeAll(systemBeans);
+    }
+
+    void postConstructInitialization(List<Bean> beans) {
+        for (Bean bean : beans) {
+            Method[] methods = bean.getClass().getMethods();
+            for (Method method : methods) {
+                if (method.isAnnotationPresent(PostConstruct.class) && method.getParameterCount() == 0) {
+                    try {
+                        method.invoke(bean.getValue());
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        throw new BeanInitiationException("Cannot execute post construct initialization for bean " +
+                                bean.getId(), e);
+                    }
+                }
+            }
+        }
+    }
+
+    private void postProcessAfterInitialization(List<Bean> beans) {
     }
 
     static String getSetterName(String fieldName) {
