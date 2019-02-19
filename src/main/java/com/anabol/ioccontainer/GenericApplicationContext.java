@@ -17,7 +17,7 @@ import java.util.*;
 public class GenericApplicationContext implements ApplicationContext {
 
     private List<Bean> beans;
-    private List<Bean> systemBeans = new ArrayList<>();
+    private List<Bean> postProcessorBeans = new ArrayList<>();
 
     public GenericApplicationContext(String... filePaths) {
         BeanDefinitionReader definitionReader = new XmlBeanDefinitionReader(filePaths);
@@ -26,9 +26,9 @@ public class GenericApplicationContext implements ApplicationContext {
         beans = createBeans(beanDefinitions);
         injectValueDependencies(beanDefinitions, beans);
         injectRefDependencies(beanDefinitions, beans);
-        postProcessBeforeInitialization(beans);
+        postProcessBeans(postProcessorBeans, beans, "postProcessBeforeInitialization");
         postConstructInitialization(beans);
-        postProcessAfterInitialization(beans);
+        postProcessBeans(postProcessorBeans, beans, "postProcessAfterInitialization");
     }
 
     @Override
@@ -86,15 +86,12 @@ public class GenericApplicationContext implements ApplicationContext {
             try {
                 Class<?> clazz = Class.forName(beanDefinition.getClassName());
                 if (BeanFactoryPostProcessor.class.isAssignableFrom(clazz)) {
-                    Bean systemBean = new Bean();
-                    systemBean.setId(beanDefinition.getId());
-                    systemBean.setValue(clazz.newInstance());
-                    Method method = clazz.getMethod("postProcessBeanFactory");
-                    method.invoke(systemBean, beanDefinitions);
+                    Method method = clazz.getMethod("postProcessBeanFactory", List.class);
+                    method.invoke(clazz.newInstance(), beanDefinitions);
                 }
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
                     InvocationTargetException e) {
-                throw new BeanInitiationException(e);
+                throw new BeanInitiationException("Cannot post process bean definitions with " + beanDefinition.getId(), e);
             }
         }
     }
@@ -105,9 +102,13 @@ public class GenericApplicationContext implements ApplicationContext {
             try {
                 Bean bean = new Bean();
                 Class<?> clazz = Class.forName(beanDefinition.getClassName());
-                bean.setId(beanDefinition.getId());
-                bean.setValue(clazz.newInstance());
-                result.add(bean);
+                if (BeanPostProcessor.class.isAssignableFrom(clazz)) {
+                    postProcessorBeans.add(bean);
+                } else if (!BeanFactoryPostProcessor.class.isAssignableFrom(clazz)) { // exclude Definition post processor beans
+                    bean.setId(beanDefinition.getId());
+                    bean.setValue(clazz.newInstance());
+                    result.add(bean);
+                }
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                 throw new BeanInitiationException(e);
             }
@@ -157,23 +158,24 @@ public class GenericApplicationContext implements ApplicationContext {
         }
     }
 
-    void postProcessBeforeInitialization(List<Bean> beans) {
-        separateSystemBeans(beans);
-    }
-
-    private void separateSystemBeans(List<Bean> beans) {
-        for (Bean bean : beans) {
-            Class<?> clazz = bean.getClass();
-            if (BeanPostProcessor.class.isAssignableFrom(clazz)) {
-                systemBeans.add(bean);
+    void postProcessBeans(List<Bean> postProcessorBeans, List<Bean> beans, String methodName) {
+        for (Bean postProcessorBean : postProcessorBeans) {
+            try {
+                Method method = postProcessorBean.getValue().getClass().getMethod(methodName, Object.class, String.class);
+                for (Bean bean : beans) {
+                    Object newBeanValue = method.invoke(postProcessorBean.getValue(), bean.getValue(), bean.getId());
+                    bean.setValue(newBeanValue);
+                }
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new BeanInitiationException("Cannot execute " + methodName + " with system bean "
+                        + postProcessorBean.getId(), e);
             }
         }
-        beans.removeAll(systemBeans);
     }
 
     void postConstructInitialization(List<Bean> beans) {
         for (Bean bean : beans) {
-            Method[] methods = bean.getClass().getMethods();
+            Method[] methods = bean.getValue().getClass().getMethods();
             for (Method method : methods) {
                 if (method.isAnnotationPresent(PostConstruct.class) && method.getParameterCount() == 0) {
                     try {
@@ -185,9 +187,6 @@ public class GenericApplicationContext implements ApplicationContext {
                 }
             }
         }
-    }
-
-    private void postProcessAfterInitialization(List<Bean> beans) {
     }
 
     static String getSetterName(String fieldName) {

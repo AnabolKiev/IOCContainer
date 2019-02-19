@@ -1,6 +1,7 @@
 package com.anabol.ioccontainer;
 
 import com.anabol.ioccontainer.entity.*;
+import com.anabol.ioccontainer.processor.CustomBeanPostProcessor;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -14,6 +15,8 @@ public class GenericApplicationContextTest {
 
     private GenericApplicationContext applicationContext;
     private List<BeanDefinition> beanDefinitions;
+    private List<BeanDefinition> postProcessorBeanDefinitions;
+
 
     @Before
     public void before() {
@@ -80,6 +83,54 @@ public class GenericApplicationContextTest {
         assertEquals("setAttribute", GenericApplicationContext.getSetterName("attribute"));
     }
 
+    @Test
+    public void testPostProcessBeanDefinitions() {
+        BeanDefinition postProcessorBeanDefinition = new BeanDefinition();
+        postProcessorBeanDefinition.setId("postProcessorTestBean");
+        postProcessorBeanDefinition.setClassName("com.anabol.ioccontainer.processor.CustomBeanFactoryPostProcessor");
+        postProcessorBeanDefinitions = new ArrayList<>(beanDefinitions);
+        postProcessorBeanDefinitions.add(postProcessorBeanDefinition);
+
+        applicationContext.postProcessBeanDefinitions(postProcessorBeanDefinitions);
+
+        String processedAttribute = postProcessorBeanDefinitions.get(0).getValueDependencies().get("name");
+        assertEquals("Updated by PostProcessor", processedAttribute);
+    }
+
+    @Test
+    public void testPostConstructInitialization() {
+        Bean bean = new Bean();
+        bean.setValue(new TestImpl());
+        List<Bean> beans = new ArrayList<>();
+        beans.add(bean);
+
+        applicationContext.postConstructInitialization(beans);
+
+        assertTrue(beans.get(0).getValue() instanceof TestImpl);
+        assertEquals("Updated in init section", TestImpl.class.cast(beans.get(0).getValue()).getName());
+    }
+
+    @Test
+    public void testPostProcessBeans() {
+        Bean bean = new Bean();
+        bean.setValue(new TestImpl());
+        List<Bean> beans = new ArrayList<>();
+        beans.add(bean);
+
+        Bean postProcessorBean = new Bean();
+        postProcessorBean.setValue(new CustomBeanPostProcessor());
+        List<Bean> postProcessorBeans = new ArrayList<>();
+        postProcessorBeans.add(postProcessorBean);
+
+        applicationContext.postProcessBeans(postProcessorBeans, beans, "postProcessBeforeInitialization");
+
+        assertTrue(beans.get(0).getValue() instanceof String);
+        assertEquals("Hello world", beans.get(0).getValue());
+    }
+
+
+
+    // Old tests below. To refactor
     @Test
     public void testGetBeanNames() {
         List<String> beanNames = applicationContext.getBeanNames();

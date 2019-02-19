@@ -1,16 +1,13 @@
 package com.anabol.ioccontainer.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class TestService {
 
     private ITest test;
-
-    public void setTest(ITest test) {
-        this.test = test;
-    }
-
-    public ITest getTest() {
-        return test;
-    }
 
     public void doSomething() {
         test.doSomething();
