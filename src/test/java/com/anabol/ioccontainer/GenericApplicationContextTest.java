@@ -152,7 +152,7 @@ public class GenericApplicationContextTest {
         assertTrue(applicationContext.getBean(TestImpl.class).getClass() == TestImpl.class);
         TestImpl bean = applicationContext.getBean(TestImpl.class);
         assertNotNull(bean);
-        assertEquals("TEST_NAME", bean.getName());
+        assertEquals("Updated in init section", bean.getName());
     }
 
     @Test
@@ -160,7 +160,7 @@ public class GenericApplicationContextTest {
         assertTrue(applicationContext.getBean(ITest.class).getClass() == TestImpl.class);
         ITest bean = applicationContext.getBean(ITest.class);
         assertNotNull(bean);
-        assertEquals("TEST_NAME", bean.getName());
+        assertEquals("Updated in init section", bean.getName());
     }
 
     @Test(expected = RuntimeException.class)
